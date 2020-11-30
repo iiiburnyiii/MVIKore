@@ -1,28 +1,27 @@
-package com.github.iiiburnyiii.mvikore.core
+package io.github.iiiburnyiii.mvikore.core.feature
 
-import com.github.iiiburnyiii.mvikore.core.base.*
+import io.github.iiiburnyiii.mvikore.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import java.io.Closeable
-import kotlin.coroutines.CoroutineContext
 
-open class BaseFeature<in Intent, in Effect, out State, out Event>(
+open class ScopedFeature<in Intent, in Effect, out State, out Event>(
     initialState: State,
-    launchDispatcher: CoroutineDispatcher,
+    autoInit: Boolean = true,
+    flowDispatcher: CoroutineDispatcher = Dispatchers.Default,
     actor: Actor<Intent, Effect, State>,
     reducer: Reducer<Effect, State>,
-    eventPublisher: EventPublisher<Intent, Effect, State, Event>?,
-    private val bootstrapper: Bootstrapper<Intent>?
+    eventPublisher: EventPublisher<Intent, Effect, State, Event>? = null,
+    private val bootstrapper: Bootstrapper<Intent>? = null
 ) : Feature<Intent, State, Event> {
 
     private val stateFlow = MutableStateFlow(initialState)
     private val eventFlow = MutableSharedFlow<Event>()
     private val intentFlow = MutableSharedFlow<Intent>()
 
-    override val coroutineContext: CoroutineContext = launchDispatcher
-    override val state: State get() = stateFlow.value
+    private val featureScope = CoroutineScope(SupervisorJob() + flowDispatcher)
     override val events: SharedFlow<Event> get() = eventFlow
 
+    override val value: State get() = stateFlow.value
     override val replayCache: List<State> get() = stateFlow.replayCache
 
     private val eventPublisherWrapper = eventPublisher?.let {
@@ -42,15 +41,18 @@ open class BaseFeature<in Intent, in Effect, out State, out Event>(
     )
 
     init {
-        launch {
-            intentFlow
-                .onEach { intent -> actorWrapper.emit(intent to state) }
-                .launchIn(this)
+        if (autoInit) initFeature()
+    }
 
-            bootstrapper?.invoke()
-                ?.onEach { intent -> intentFlow.emit(intent) }
-                ?.launchIn(this)
-        }
+    protected fun initFeature() = featureScope.launch {
+        intentFlow
+            .onEach { intent -> actorWrapper.emit(intent to value) }
+            .launchIn(this)
+
+        bootstrapper?.invoke()
+            ?.cancellable()
+            ?.onEach { intent -> intentFlow.emit(intent) }
+            ?.launchIn(this)
     }
 
     override suspend fun emit(value: Intent) {
@@ -60,6 +62,10 @@ open class BaseFeature<in Intent, in Effect, out State, out Event>(
     @InternalCoroutinesApi
     override suspend fun collect(collector: FlowCollector<State>) {
         stateFlow.collect(collector)
+    }
+
+    override fun close() {
+        featureScope.cancel()
     }
 
 }

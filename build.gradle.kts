@@ -22,12 +22,13 @@ allprojects {
 subprojects {
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
-            useIR = true
             jvmTarget = "1.8"
+            languageVersion = "1.4"
         }
     }
 }
 
 tasks.register("clean", Delete::class) {
+    group = "build"
     delete(rootProject.buildDir)
 }

@@ -1,9 +1,10 @@
+@file:Suppress("EXPERIMENTAL_API_USAGE")
 
-package com.github.iiiburnyiii.mvikore.core
+package io.github.iiiburnyiii.mvikore.core.feature
 
-import com.github.iiiburnyiii.mvikore.core.base.Actor
-import com.github.iiiburnyiii.mvikore.core.base.EventPublisher
-import com.github.iiiburnyiii.mvikore.core.base.Reducer
+import io.github.iiiburnyiii.mvikore.core.Actor
+import io.github.iiiburnyiii.mvikore.core.EventPublisher
+import io.github.iiiburnyiii.mvikore.core.Reducer
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 
