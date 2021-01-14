@@ -8,4 +8,4 @@ typealias Actor<Intent, Effect, State> = (intent: Intent, state: State) -> Flow<
 
 typealias Reducer<Effect, State> = (effect: Effect, state: State) -> State
 
-typealias EventPublisher<Intent, Effect, State, Event> = (intent: Intent, effect: Effect, state: State) -> Event?
+typealias EventPublisher<Effect, State, Event> = (effect: Effect, state: State) -> Event?
