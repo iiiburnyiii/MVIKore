@@ -2,9 +2,7 @@ package io.github.iiiburnyiii.mvikore.core
 
 import io.github.iiiburnyiii.mvikore.core.base.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -68,6 +66,10 @@ public open class ScopedFeature<in Intent, in Effect, out State, out Event>(
         stateFlow
             .onSubscription { subscribedSignal.send(Unit) }
             .collect(collector)
+    }
+
+    override fun cancel() {
+        (this as CoroutineScope).cancel()
     }
 
 }

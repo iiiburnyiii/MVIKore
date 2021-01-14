@@ -6,4 +6,6 @@ public interface Feature<in Intent, out State, out Event> : Store<Intent, State>
 
     val events: SharedFlow<Event>
 
+    fun cancel()
+
 }
