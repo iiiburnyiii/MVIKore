@@ -1,4 +1,4 @@
-package io.github.iiiburnyiii.mvikore.core
+package io.github.iiiburnyiii.mvikore.core.base
 
 import kotlinx.coroutines.flow.Flow
 

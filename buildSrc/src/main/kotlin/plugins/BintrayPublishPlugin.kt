@@ -23,7 +23,7 @@ class BintrayPublishPlugin : Plugin<Project> {
 
             publications {
                 create<MavenPublication>("mavenProject") {
-                    groupId = MVIKore.GROUP_ID
+                    groupId = MVIKore.libraryId
                     artifactId = target.name
                     version = MVIKore.LIBRARY_VERSION_NAME
                 }
@@ -32,7 +32,7 @@ class BintrayPublishPlugin : Plugin<Project> {
 
         afterEvaluate {
             project.the<PublishingExtension>().publications.withType<MavenPublication> {
-                groupId = MVIKore.GROUP_ID
+                groupId = MVIKore.libraryId
                 version = MVIKore.LIBRARY_VERSION_NAME
                 artifactId = if (name.contains("metadata")) {
                     project.name
@@ -64,9 +64,9 @@ class BintrayPublishPlugin : Plugin<Project> {
             pkg.apply {
                 setLicenses("Apache-2.0")
 
-                repo = MVIKore.BINTRAY_REPO
+                repo = MVIKore.bintrayRepo
                 name = this@run.name
-                userOrg = MVIKore.BINTRAY_ORG
+                userOrg = MVIKore.bintrayOrg
 
                 vcsUrl = MVIKore.VCS_URL
                 websiteUrl = MVIKore.SITE_URL

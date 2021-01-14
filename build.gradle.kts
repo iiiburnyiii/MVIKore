@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import utils.configure
 
 buildscript {
     repositories {
@@ -23,9 +24,10 @@ subprojects {
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             jvmTarget = "1.8"
-            languageVersion = "1.4"
         }
     }
+
+    plugins.configure(this)
 }
 
 tasks.register("clean", Delete::class) {
