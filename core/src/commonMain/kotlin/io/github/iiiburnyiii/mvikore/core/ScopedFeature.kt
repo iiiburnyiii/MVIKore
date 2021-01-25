@@ -10,9 +10,9 @@ import kotlinx.coroutines.sync.withLock
 public open class ScopedFeature<in Intent, in Effect, out State, out Event>(
     initialState: State,
     flowDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    actor: Actor<Intent, Effect, State>,
-    reducer: Reducer<Effect, State>,
-    eventPublisher: EventPublisher<Effect, State, Event>? = null,
+    private val actor: Actor<Intent, Effect, State>,
+    private val reducer: Reducer<Effect, State>,
+    private val eventPublisher: EventPublisher<Effect, State, Event>? = null,
     bootstrapper: Bootstrapper<Intent>? = null
 ) : Feature<Intent, State, Event>,
     CoroutineScope by CoroutineScope(SupervisorJob() + flowDispatcher){
@@ -20,33 +20,28 @@ public open class ScopedFeature<in Intent, in Effect, out State, out Event>(
     private val stateFlow = MutableStateFlow(initialState)
     private val eventFlow = MutableSharedFlow<Event>()
     private val intentFlow = MutableSharedFlow<Intent>()
+
     private val subscribedSignal = MutableStateFlow(false)
+    private val stateMutex = Mutex()
 
     init {
         launch {
-            intentFlow.flatMapConcat { intent ->
-                actor(intent, stateFlow.value)
-                    .cancellable()
-                    .map { effect ->
-                        reducer(effect, stateFlow.value).let { newState ->
-                            newState to eventPublisher?.invoke(effect, newState)
-                        }
-                    }
-            }.collect { (newState: State, event: Event?) ->
-                stateFlow.value = newState
-
-                event?.let {
-                    eventFlow.emit(it)
-                }
+            intentFlow.flatMapMerge { intent ->
+                actor(intent, stateFlow.value).cancellable()
+            }.collect { effect ->
+                handleEffect(effect)
             }
         }
 
         launch {
             bootstrapper?.invoke()
                 ?.cancellable()
-                ?.onStart { subscribedSignal.first { it } } /** await subscription to [stateFlow] */
-                ?.let { bootstrapperFlow ->
-                    intentFlow.emitAll(bootstrapperFlow)
+                ?.onStart {
+                    /** await subscription to [stateFlow] */
+                    subscribedSignal.first { it }
+                }
+                ?.collect { bootstrapperIntent ->
+                    intentFlow.emit(bootstrapperIntent)
                 }
         }
 
@@ -63,8 +58,18 @@ public open class ScopedFeature<in Intent, in Effect, out State, out Event>(
 
     @InternalCoroutinesApi
     override suspend fun collect(collector: FlowCollector<State>) {
-        subscribedSignal.value = true
+        if (!subscribedSignal.value) subscribedSignal.value = true
         stateFlow.collect(collector)
+    }
+
+    private suspend fun handleEffect(effect: Effect) {
+        reducer(effect, stateFlow.value).let { newState ->
+            stateMutex.withLock {
+                stateFlow.value = newState
+            }
+            eventPublisher?.invoke(effect, newState)
+                ?.let { eventFlow.emit(it) }
+        }
     }
 
     override fun cancel() {

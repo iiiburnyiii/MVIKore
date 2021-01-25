@@ -11,7 +11,7 @@ object MVIKore {
     const val ISSUE_URL = "$VCS_URL/issues"
     const val SITE_URL = VCS_URL
     const val BINTRAY_URL = "https://dl.bintray.com/iiiburnyiii/MVIKore"
-    const val LIBRARY_VERSION_NAME = "0.0.7-dev"
+    const val LIBRARY_VERSION_NAME = "0.0.10-dev"
 }
 
 object Sample {
